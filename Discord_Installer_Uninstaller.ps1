@@ -10,7 +10,7 @@
 $script:diag                = $null
 $script:blnWARN             = $false
 $script:blnBREAK            = $false
-$script:mode                = 'Install' #$Env:mode
+$script:mode                = $Env:mode
 $pkg                        = "C:\IT\DiscordSetup.exe"
 $discordDownloadLink        = "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x86"
 $discordPath                = "$($Env:LOCALAPPDATA)\Discord"
@@ -91,11 +91,11 @@ function dir-Check () {
 function run-Deploy {
   try {
     logERR 4 "run-Deploy" "Attempting to download via Invoke-WebRequest"
-    Invoke-WebRequest -uri "$($discordDownloadLink)" -OutFile "$($pkg)"
+    Invoke-WebRequest -uri "$($discordDownloadLink)" -OutFile "$($pkg)" -Force
   } catch {
     try {
       logERR 3 "run-Deploy" "Error with Invoke-WebRequest : `r`nAttempting BITS transfer" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"
-      Start-BitsTransfer -Source "$($discordDownloadLink)" -Destination "$($pkg)"
+      Start-BitsTransfer -Source "$($discordDownloadLink)" -Destination "$($pkg)" -Force
     } catch { 
       logERR 2 "Could not download Discord : `r`nScript will end" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
       $script:blnWARN = $true
