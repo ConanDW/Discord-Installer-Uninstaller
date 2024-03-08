@@ -1,4 +1,3 @@
-
 <#
     .SYNOPSIS
         A script to install/unistall discord using the datto platform. Made by Cameron Day, edits and suggestions by Chris Beldsoe
@@ -11,10 +10,10 @@
 $script:diag                = $null
 $script:blnWARN             = $false
 $script:blnBREAK            = $false
-$script:mode                = $Env:mode
+$script:mode                = 'Install' #$Env:mode
 $pkg                        = "C:\IT\DiscordSetup.exe"
 $discordDownloadLink        = "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x86"
-$discordPath                = "C:\Users\$($Env:UserName)\AppData\Local\Discord"
+$discordPath                = "$($Env:LOCALAPPDATA)\Discord"
 $ProgressPreference         = "SilentlyContinue"
 #endregion - DECLORATIONS
 
@@ -103,10 +102,12 @@ function run-Deploy {
     }
   }
 
-  cd "C:\IT\"
-
-  try { 
-    .\DiscordSetup.exe -s 
+  try {
+    Start-Process -filepath "C:\IT\DiscordSetup.exe" -ArgumentList "-s" -wait
+    Start-Sleep -seconds 5
+    rm "$($discordPath)\app-*" -recurse -force
+    Start-Sleep -seconds 5
+    Start-Process -filepath "C:\IT\DiscordSetup.exe"
   } catch { 
     logERR 2 "run-Deploy" "Could not install Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
     $script:blnWARN = $true
@@ -114,11 +115,10 @@ function run-Deploy {
 }
 function run-Remove {
   try {
-    cd "$($discordPath)" 
-    .\Update.exe --uninstall -s
+    Start-Process -filepath "$($discordPath)\Update.exe" -ArgumentList "--uninstall -s" -wait
     try {
       rm "C:\Users\$($Env:UserName)\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Discord Inc" -Recurse
-      rm "C:\Users\$($Env:UserName)\AppData\Local\Discord" -Recurse
+      rm "$($Env:LOCALAPPDATA)\Discord" -Recurse -force
       rm "C:\Users\$($Env:UserName)\Desktop\Discord.lnk" -Recurse
     } catch { 
       logERR 3 "run-Remove" "Could not remove Discord shortcuts :`r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
