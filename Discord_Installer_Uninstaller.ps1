@@ -15,6 +15,7 @@ $script:mode                = $Env:mode
 $pkg                        = "C:\IT\DiscordSetup.exe"
 $discordDownloadLink        = "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x86"
 $discordPath                = "C:\Users\$($Env:UserName)\AppData\Local\Discord"
+$ProgressPreference         = "SilentlyContinue"
 #endregion - DECLORATIONS
 
 #region - FUNCTIONS
