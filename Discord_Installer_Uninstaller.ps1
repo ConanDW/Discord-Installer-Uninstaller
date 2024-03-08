@@ -90,27 +90,45 @@ function dir-Check () {
 }
 function run-Deploy {
   try {
-    logERR 4 "run-Deploy" "Attempting to download via Invoke-WebRequest"
-    Invoke-WebRequest -uri "$($discordDownloadLink)" -OutFile "$($pkg)" -Force
-  } catch {
-    try {
-      logERR 3 "run-Deploy" "Error with Invoke-WebRequest : `r`nAttempting BITS transfer" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"
-      Start-BitsTransfer -Source "$($discordDownloadLink)" -Destination "$($pkg)" -Force
-    } catch { 
-      logERR 2 "Could not download Discord : `r`nScript will end" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
-      $script:blnWARN = $true
+    get-childitem -path "C:\IT"  | where-object {$_.name -match "discordsetup.exe"} | foreach-object {
+      write-output " - Discord Setup file last downloaded : $($_.creationtime)"
+      if ($_.creationtime -gt (get-date).adddays(-$env:i_epsInterval)) {
+        $script:diag += " - NOT REMOVING EPS FILE`r`n`r`n"
+        write-output " - NOT REMOVING EPS FILE`r`n"
+        $script:blnDL = $false
+      } elseif ($_.creationtime -le (get-date).adddays(-$env:i_epsInterval)) {
+        $script:diag += " - DELETE : $($_.name)`r`n`r`n"
+        write-output " - DELETE : $($_.name)`r`n"
+        remove-item $_.fullname -force -erroraction silentlycontinue
+        $script:blnDL = $true
+      }
     }
+    if ($script:blnDL) {
+      try {
+        logERR 4 "run-Deploy" "Attempting to download via Invoke-WebRequest"
+        Invoke-WebRequest -uri "$($discordDownloadLink)" -OutFile "$($pkg)" -Force
+      } catch {
+        try {
+          logERR 3 "run-Deploy" "Error with Invoke-WebRequest : `r`nAttempting BITS transfer" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"
+          Start-BitsTransfer -Source "$($discordDownloadLink)" -Destination "$($pkg)" -Force
+        } catch { 
+          logERR 3 "Could not download Discord : `r`nScript will end" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+        }
+      }
+    }
+  } catch {
+    logERR 2 "run-Deploy" "Setup couldn't be downloaded"
   }
-
-  try {
-    Start-Process -filepath "C:\IT\DiscordSetup.exe" -ArgumentList "-s" -wait
-    Start-Sleep -seconds 5
-    rm "$($discordPath)\app-*" -recurse -force
-    Start-Sleep -seconds 5
-    Start-Process -filepath "C:\IT\DiscordSetup.exe"
-  } catch { 
-    logERR 2 "run-Deploy" "Could not install Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
-    $script:blnWARN = $true
+  if (-not ($script:blnBREAK)) {
+    try {
+      Start-Process -filepath "C:\IT\DiscordSetup.exe" -ArgumentList "-s" -wait
+      Start-Sleep -seconds 5
+      rm "$($discordPath)\app-*" -recurse -force
+      Start-Sleep -seconds 5
+      Start-Process -filepath "C:\IT\DiscordSetup.exe"
+    } catch { 
+      logERR 2 "run-Deploy" "Could not install Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+    }
   }
 }
 function run-Remove {
@@ -125,7 +143,6 @@ function run-Remove {
     }
   } catch { 
     logERR 2 "run-Remove" "Could not uninstall Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
-    $script:blnWARN = $true 
   }
 }
 #endregion - FUNCTIONS
