@@ -11,7 +11,7 @@
 $script:diag                = $null
 $script:blnWARN             = $false
 $script:blnBREAK            = $false
-$script:mode                = $env:mode
+$script:mode                = $Env:mode
 $pkg                        = "C:\IT\DiscordSetup.exe"
 $discordDownloadLink        = "https://discord.com/api/downloads/distributions/app/installers/latest?channel=stable&platform=win&arch=x86"
 $discordPath                = "C:\Users\$($Env:UserName)\AppData\Local\Discord"
@@ -97,10 +97,20 @@ function run-Deploy {
     try {
       logERR 3 "run-Deploy" "Error with Invoke-WebRequest : `r`nAttempting BITS transfer" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"
       Start-BitsTransfer -Source "$($discordDownloadLink)" -Destination "$($pkg)"
-    } catch { logERR 2 "Could not download Discord : `r`nScript will end" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"; $script:blnWARN = $true}
+    } catch { 
+      logERR 2 "Could not download Discord : `r`nScript will end" "$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+      $script:blnWARN = $true
+    }
   }
+
   cd "C:\IT\"
-  try { .\DiscordSetup.exe -s } catch { logERR 2 "run-Deploy" "Could not install Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"; $script:blnWARN = $true}
+  
+  try { 
+    .\DiscordSetup.exe -s 
+  } catch { 
+    logERR 2 "run-Deploy" "Could not install Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+    $script:blnWARN = $true
+  }
 }
 function run-Remove {
   try {
@@ -109,32 +119,28 @@ function run-Remove {
     try {
       rm "C:\Users\$($Env:UserName)\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Discord Inc" -Recurse
       rm "C:\Users\$($Env:UserName)\Desktop\Discord.lnk" -Recurse
-    } catch { logERR 3 "run-Remove" "Could not remove Discord shortcuts :`r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" }
-  } catch { logERR 2 "run-Remove" "Could not uninstall Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"; $script:blnWARN = $true }
+    } catch { 
+      logERR 3 "run-Remove" "Could not remove Discord shortcuts :`r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+    }
+  } catch { 
+    logERR 2 "run-Remove" "Could not uninstall Discord : `r`nScript will end `r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
+    $script:blnWARN = $true 
+  }
 }
 #endregion - FUNCTIONS
-#region - Script 
+#region - SCRIPT
 $ScrptStartTime = (get-date -format "yyyy-MM-dd HH:mm:ss").ToString()
 $script:sw = [Diagnostics.Stopwatch]::StartNew()
 dir-Check
 if ($script:mode -eq "Install") { run-Deploy } elseif ($script:mode -eq "Uninstall") { run-Remove }
 $script:finish = (get-date -format "yyyy-MM-dd HH:mm:ss").ToString()
-if (-not ($script:blnWARN) -and $script:mode -eq "Install") { 
-  write-DRMMAlert "Discord was installed successfully :`r`n$($strLineSeparator)`r`n"
+if (-not ($script:blnWARN)) { 
+  write-DRMMAlert "Execution Successful :`r`n$($strLineSeparator)`r`n$($script:finish)"
   write-DRMMDiag "$($script:diag)"
   exit 0 
-} elseif (-not ($script:blnWARN) -and $script:mode -eq "Uninstall") {
-  write-DRMMAlert "Discord was uninstalled successfully :`r`n$($strLineSeparator)`r`n"
-  write-DRMMDiag "$($script:diag)"
-  exit 0
-} elseif ($script:blnWARN -and $script:mode -eq "Uninstall") {
-  write-DRMMAlert "Discord was not uninstalled successfully : This may require manual removal`r`n$($strLineSeparator)`r`n"
+} elseif ($script:blnWARN) {
+  write-DRMMAlert "Execution not Successful : This may require manual removal/install`r`n$($strLineSeparator)`r`n$($script:finish)"
   write-DRMMDiag "$($script:diag)"
   exit 1
-} elseif ($script:blnWARN -and $script:mode -eq "Install") { 
-  write-DRMMAlert "Discord was not installed successfully : This may require manual install`r`n$($strLineSeparator)`r`n"
-  write-DRMMDiag "$($script:diag)" 
-  exit 1 
 }
-
-#endregion - Script
+#endregion - SCRIPT
