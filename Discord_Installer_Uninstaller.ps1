@@ -1,11 +1,11 @@
 
 <#
     .SYNOPSIS
-        
+        A script to install/unistall discord using the datto platform. Made by Cameron Day, edits and suggestions by Chris Beldsoe
     .DESCRIPTION
-        
-    .NOTES
-       
+        A script to install/unistall discord using the datto platform. It downloads DiscordSetup.exe from Discord's cdn and installs it on the local user.
+        This script can be run locally or through the datto platform as a quick job. To use this locally set $env:mode to either "Install" or "Unistall"
+        Example: $env:mode = "Install"
 #>
 #region - DECLORATIONS
 $script:diag                = $null
@@ -87,7 +87,6 @@ function dir-Check () {
   if (-not (test-path -path "C:\IT")) { new-item -path "C:\IT" -itemtype directory -force }
   if (-not (test-path -path "C:\IT\Log")) { new-item -path "C:\IT\Log" -itemtype directory -force }
   if (-not (test-path -path "C:\IT\Scripts")) { new-item -path "C:\IT\Scripts" -itemtype directory -force }
-  if (test-path -path "$($discordPath)") {logERR 2 "dir-Check" "Discord is already installed!`r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)"}
 }
 function run-Deploy {
   try {
@@ -104,7 +103,7 @@ function run-Deploy {
   }
 
   cd "C:\IT\"
-  
+
   try { 
     .\DiscordSetup.exe -s 
   } catch { 
@@ -118,6 +117,7 @@ function run-Remove {
     .\Update.exe --uninstall -s
     try {
       rm "C:\Users\$($Env:UserName)\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Discord Inc" -Recurse
+      rm "C:\Users\$($Env:UserName)\AppData\Local\Discord" -Recurse
       rm "C:\Users\$($Env:UserName)\Desktop\Discord.lnk" -Recurse
     } catch { 
       logERR 3 "run-Remove" "Could not remove Discord shortcuts :`r`n$($_.Exception)`r`n$($_.scriptstacktrace)`r`n$($_)" 
